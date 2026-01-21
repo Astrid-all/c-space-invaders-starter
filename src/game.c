@@ -31,7 +31,7 @@ bool init(SDL_Window **window, SDL_Renderer **renderer)
     return true;
 }
 
-void handle_input(bool *running, const Uint8 *keys, Entity *player, Entity *bullet, bool *bullet_active)
+void handle_input(bool *running, const Uint8 *keys, Entity *player, Entity *bullet,bool *bullet_active) 
 {
     SDL_Event event;
     while (SDL_PollEvent(&event))
@@ -57,7 +57,7 @@ void handle_input(bool *running, const Uint8 *keys, Entity *player, Entity *bull
     }
 }
 
-void update(Entity *player, Entity *bullet, bool *bullet_active, float dt)
+void update(Entity *player, Entity *bullet,Entity_Alien* alien,size_t taille_alien, bool *bullet_active,float dt) // ajout ennemis
 {
     player->x += player->vx * dt;
 
@@ -72,9 +72,25 @@ void update(Entity *player, Entity *bullet, bool *bullet_active, float dt)
         if (bullet->y + bullet->h < 0)
             *bullet_active = false;
     }
+    // actualisation coordonnées des aliens
+    for(size_t i =0;i<taille_alien;i++){
+        alien[i].y += alien[i].vy*dt;
+        // vérification touché bullet
+        if((((bullet->x>=alien[i].x)&&(bullet->x<=alien[i].x+ALIEN_WIDTH)) ||(((bullet->x+BULLET_WIDTH)>=alien[i].x)&&(bullet->x+BULLET_WIDTH<=alien[i].x+ALIEN_WIDTH)))
+                && ((bullet->y>alien[i].y)&&(bullet->y <= alien[i].y + ALIEN_WIDTH)) ){
+            alien[i].hurt = true;
+            alien[i].x =0;
+            alien[i].y = 0;
+            alien[i].w = 0;
+            alien[i].h =0;
+            alien[i].vy = 0;
+            *bullet_active = false;
+        }
+    }
+
 }
 
-void render(SDL_Renderer *renderer, Entity *player, Entity *bullet, bool bullet_active)
+void render(SDL_Renderer *renderer, Entity *player,Entity_Alien* alien,size_t taille_alien, Entity *bullet, bool bullet_active)
 {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
@@ -84,6 +100,20 @@ void render(SDL_Renderer *renderer, Entity *player, Entity *bullet, bool bullet_
         player->w, player->h};
     SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
     SDL_RenderFillRect(renderer, &player_rect);
+
+    // aperçu graphique des aliens
+    SDL_Rect alien_rect[taille_alien];
+    for(size_t i =0; i<taille_alien;i++){ 
+        // on définit les coordonnées du rectangle si l'alien n'a pas été touché
+        if(alien[i].hurt==false){
+        alien_rect[i].x = (int)alien[i].x;
+        alien_rect[i].y = (int)alien[i].y;
+        alien_rect[i].w = alien[i].w;
+        alien_rect[i].h =  alien[i].h;
+        SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
+        SDL_RenderFillRect(renderer, &alien_rect[i]);
+        }
+    }
 
     if (bullet_active)
     {

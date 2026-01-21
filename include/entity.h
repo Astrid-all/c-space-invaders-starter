@@ -8,4 +8,11 @@ typedef struct
     int w, h;
 } Entity;
 
+typedef struct {
+    float x,y;
+    float vy;
+    int w,h;
+    bool hurt;
+} Entity_Alien;
+
 #endif
