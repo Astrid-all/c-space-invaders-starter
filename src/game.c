@@ -1,6 +1,8 @@
 #include <SDL2/SDL.h>
 #include "game.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 
 bool init(SDL_Window **window, SDL_Renderer **renderer)
 {
@@ -31,7 +33,7 @@ bool init(SDL_Window **window, SDL_Renderer **renderer)
     return true;
 }
 
-void handle_input(bool *running, const Uint8 *keys, Entity *player, Entity *bullet,bool *bullet_active) 
+void handle_input(bool *running, const Uint8 *keys, Entity *player, Entity *bullet,bool *bullet_active,bool *echap) 
 {
     SDL_Event event;
     while (SDL_PollEvent(&event))
@@ -55,9 +57,12 @@ void handle_input(bool *running, const Uint8 *keys, Entity *player, Entity *bull
         bullet->h = BULLET_HEIGHT;
         bullet->vy = -BULLET_SPEED;
     }
+    if(keys[SDL_SCANCODE_RETURN]){
+        *echap = true;
+    }
 }
 
-void update(Entity *player, Entity *bullet,Entity_Alien* alien,size_t taille_alien, bool *bullet_active,float dt) // ajout ennemis
+void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* alien,size_t taille_alien, bool *bullet_active, bool *bullet_active_enemy, float dt) // ajout ennemis
 {
     player->x += player->vx * dt;
 
@@ -66,18 +71,23 @@ void update(Entity *player, Entity *bullet,Entity_Alien* alien,size_t taille_ali
     if (player->x + player->w > SCREEN_WIDTH)
         player->x = SCREEN_WIDTH - player->w;
 
+    // Gestion bullet joueur
     if (*bullet_active)
     {
         bullet->y += bullet->vy * dt;
         if (bullet->y + bullet->h < 0)
             *bullet_active = false;
     }
-    // actualisation coordonnées des aliens
+
+    
+
+
+    // Gestion aliens
     for(size_t i =0;i<taille_alien;i++){
         alien[i].y += alien[i].vy*dt;
         // vérification touché bullet
         if((((bullet->x>=alien[i].x)&&(bullet->x<=alien[i].x+ALIEN_WIDTH)) ||(((bullet->x+BULLET_WIDTH)>=alien[i].x)&&(bullet->x+BULLET_WIDTH<=alien[i].x+ALIEN_WIDTH)))
-                && ((bullet->y>alien[i].y)&&(bullet->y <= alien[i].y + ALIEN_WIDTH)) ){
+                && ((bullet->y>alien[i].y)&&(bullet->y <= alien[i].y + ALIEN_HEIGHT)) ){
             alien[i].hurt = true;
             alien[i].x =0;
             alien[i].y = 0;
@@ -86,8 +96,48 @@ void update(Entity *player, Entity *bullet,Entity_Alien* alien,size_t taille_ali
             alien[i].vy = 0;
             *bullet_active = false;
         }
+        
+    }
+    //Gestion bullet ennemies 
+    if(*bullet_active_enemy)
+    {
+        bullet_enemy->y-=bullet_enemy->vy *dt;
+        if(bullet_enemy->y>SCREEN_HEIGHT){
+            *bullet_active_enemy = false;
+        }
+    }
+    
+
+    else if(*bullet_active_enemy == false){
+        srand(time(NULL));
+        pos_emetteur = rand() % taille_alien;
+
     }
 
+}
+
+// gestion fin de partie
+bool end_game(Entity_Alien* alien, Entity *player, size_t taille_alien, bool *running,bool victory){
+    int compt = 0;
+    for(size_t i = 0; i<taille_alien;i++){
+        if(alien[i].y + ALIEN_HEIGHT >= player->y+PLAYER_HEIGHT){  //touche le sol
+            victory = false;
+            return *running = false;
+        }
+        if((alien[i].y + ALIEN_HEIGHT>= player->y )&&(((alien[i].x + ALIEN_WIDTH>=player->x)&&(alien[i].x+ALIEN_WIDTH<= player->x + PLAYER_WIDTH))||
+        ((alien[i].x >=player->x)&&(alien[i].x<= player->x + PLAYER_WIDTH)))){ // touche le joueur
+            victory=false;
+            return *running = false;
+        }
+        else if(alien[i].hurt == true){
+            compt +=1;
+        }
+    }
+    if(compt == (int)taille_alien){ // tous les aliens sont détruits
+        victory = true;
+        return *running = false;
+    }
+    return *running = true;
 }
 
 void render(SDL_Renderer *renderer, Entity *player,Entity_Alien* alien,size_t taille_alien, Entity *bullet, bool bullet_active)
