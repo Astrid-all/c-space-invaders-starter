@@ -27,7 +27,7 @@ int main(void)
         .w = PLAYER_WIDTH,
         .h = PLAYER_HEIGHT,
         .vx = 0,
-        .vy = 0
+        .vy = 0,
         .life = FULL_LIFE};
     int nb_ennemis = 10;
 
@@ -53,7 +53,7 @@ int main(void)
         
 
     }
-
+    // Initialisation bullets joueur et ennemie
     Entity bullet = {0};
     bool bullet_active = false;
     Entity bullet_enemy = {0};
@@ -73,8 +73,8 @@ int main(void)
         SDL_PumpEvents();
         const Uint8 *keys = SDL_GetKeyboardState(NULL);
         handle_input(&running, keys, &player, &bullet, &bullet_active,&echap);
-        update(&player, &bullet,liste_alien,nb_ennemis, &bullet_active, dt,timer);
-        render(renderer, &player,liste_alien,nb_ennemis, &bullet, bullet_active);
+        update(&player, &bullet,&bullet_enemy, liste_alien,nb_ennemis, &bullet_active,&bullet_active_enemy, dt);
+        render(renderer, &player,liste_alien,nb_ennemis, &bullet, &bullet_enemy, bullet_active, bullet_active_enemy);
         running = end_game(liste_alien,&player,nb_ennemis,&running,victory);
         }
         else if((running==false)&&(echap ==false)){

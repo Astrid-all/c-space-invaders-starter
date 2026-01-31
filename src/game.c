@@ -62,8 +62,9 @@ void handle_input(bool *running, const Uint8 *keys, Entity *player, Entity *bull
     }
 }
 
-void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* alien,size_t taille_alien, bool *bullet_active, bool *bullet_active_enemy, float dt) // ajout ennemis
-{
+void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* alien,
+    size_t taille_alien, bool *bullet_active, bool *bullet_active_enemy, float dt){
+
     player->x += player->vx * dt;
 
     if (player->x < 0)
@@ -78,11 +79,9 @@ void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* al
         if (bullet->y + bullet->h < 0)
             *bullet_active = false;
     }
-
-    
-
-
+ 
     // Gestion aliens
+    int nb_aliens_restants = 0;
     for(size_t i =0;i<taille_alien;i++){
         alien[i].y += alien[i].vy*dt;
         // vérification touché bullet
@@ -96,29 +95,61 @@ void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* al
             alien[i].vy = 0;
             *bullet_active = false;
         }
+        if(alien[i].hurt==false){
+            nb_aliens_restants +=1 ;
+        }
         
     }
+
+    int* liste_aliens_restants = malloc(sizeof(int)*nb_aliens_restants);
+    int compteur = 0;
+    for(size_t j =0; j<taille_alien;j++){
+        if (alien[j].hurt ==false){
+            liste_aliens_restants[compteur] = j; // on garde les indices des aliens restants
+            compteur +=1;
+    }
+    }
+
     //Gestion bullet ennemies 
     if(*bullet_active_enemy)
     {
-        bullet_enemy->y-=bullet_enemy->vy *dt;
-        if(bullet_enemy->y>SCREEN_HEIGHT){
+        bullet_enemy->y+=bullet_enemy->vy *dt;
+        
+        // joueur touché
+        if(
+            (((bullet_enemy->x <= player->x+PLAYER_WIDTH)&&(bullet_enemy->x>=player->x)) ||
+            ((bullet_enemy->x + BULLET_WIDTH <= player->x + PLAYER_WIDTH) && (bullet_enemy->x + BULLET_WIDTH >=player->x))) &&
+            ((bullet_enemy->y + BULLET_HEIGHT <=player->y+PLAYER_HEIGHT ) &&(bullet_enemy->y + BULLET_HEIGHT>=player->y))
+        ){
+            player->life -= BULLET_HARM;
+            *bullet_active_enemy = false; 
+        }
+        else if(bullet_enemy->y>SCREEN_HEIGHT){
             *bullet_active_enemy = false;
         }
     }
     
 
     else if(*bullet_active_enemy == false){
-        srand(time(NULL));
-        pos_emetteur = rand() % taille_alien;
 
+        srand(time(NULL)); //initialisation du random
+        int pos_emetteur = rand() % nb_aliens_restants; // choix aléatoire d'un ennemi parmi ceux restants
+        bullet_enemy->y = alien[liste_aliens_restants[pos_emetteur]].y + ALIEN_HEIGHT;
+        bullet_enemy->x = alien[liste_aliens_restants[pos_emetteur]].x + ALIEN_WIDTH / 2;
+        bullet_enemy->vy = BULLET_SPEED * 0.4;
+        bullet_enemy->w = BULLET_WIDTH;
+        bullet_enemy->h = BULLET_HEIGHT;
+        *bullet_active_enemy = true;
     }
+    free(liste_aliens_restants);
 
 }
+
 
 // gestion fin de partie
 bool end_game(Entity_Alien* alien, Entity *player, size_t taille_alien, bool *running,bool victory){
     int compt = 0;
+    // contact avec les aliens
     for(size_t i = 0; i<taille_alien;i++){
         if(alien[i].y + ALIEN_HEIGHT >= player->y+PLAYER_HEIGHT){  //touche le sol
             victory = false;
@@ -133,23 +164,40 @@ bool end_game(Entity_Alien* alien, Entity *player, size_t taille_alien, bool *ru
             compt +=1;
         }
     }
+    // destruction des aliens
     if(compt == (int)taille_alien){ // tous les aliens sont détruits
         victory = true;
         return *running = false;
     }
+    // fin de vie
+    else if(player->life<=0){
+        victory = false;
+        return *running = false;
+    }
+
     return *running = true;
 }
 
-void render(SDL_Renderer *renderer, Entity *player,Entity_Alien* alien,size_t taille_alien, Entity *bullet, bool bullet_active)
+
+void render(SDL_Renderer *renderer, Entity *player,Entity_Alien* alien,size_t taille_alien, Entity *bullet, Entity *bullet_enemy, bool bullet_active,
+    bool bullet_active_enemy)
 {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
-
+    // aperçu joueur
     SDL_Rect player_rect = {
         (int)player->x, (int)player->y,
         player->w, player->h};
     SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
     SDL_RenderFillRect(renderer, &player_rect);
+
+    // barre de niveau de vie
+    SDL_Rect full_life = {30,15,LIFE_CHART_WIDTH,LIFE_CHART_HEIGHT};
+    SDL_SetRenderDrawColor(renderer, 128, 128, 128, 255);
+    SDL_RenderFillRect(renderer, &full_life);
+    SDL_Rect current_life = {30,15,(int)LIFE_CHART_WIDTH*(player->life / FULL_LIFE),LIFE_CHART_HEIGHT};
+    SDL_SetRenderDrawColor(renderer, 139, 0, 0, 255);
+    SDL_RenderFillRect(renderer, &current_life);
 
     // aperçu graphique des aliens
     SDL_Rect alien_rect[taille_alien];
@@ -164,7 +212,7 @@ void render(SDL_Renderer *renderer, Entity *player,Entity_Alien* alien,size_t ta
         SDL_RenderFillRect(renderer, &alien_rect[i]);
         }
     }
-
+    // afichage bullets
     if (bullet_active)
     {
         SDL_Rect bullet_rect = {
@@ -174,7 +222,15 @@ void render(SDL_Renderer *renderer, Entity *player,Entity_Alien* alien,size_t ta
         SDL_RenderFillRect(renderer, &bullet_rect);
     }
 
+    if(bullet_active_enemy){
+        SDL_Rect bullet_enemy_rect = {
+            (int)bullet_enemy->x, (int)bullet_enemy->y, bullet_enemy->w, bullet_enemy->h};
+        SDL_SetRenderDrawColor(renderer,255,0,0,255);
+        SDL_RenderFillRect(renderer,&bullet_enemy_rect);
+        }
+    
     SDL_RenderPresent(renderer);
+
 }
 
 void cleanup(SDL_Window *window, SDL_Renderer *renderer)
