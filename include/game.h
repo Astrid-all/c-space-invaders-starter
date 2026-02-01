@@ -15,6 +15,11 @@
 
 #define ALIEN_WIDTH 25
 #define ALIEN_HEIGHT 25
+#define ALIEN_SPEED_Y 10.0f
+#define INCREASE_SPEED 10.0f
+#define NUM_ALIEN_PER_LINE 10
+#define SPACE_VERTICAL 54
+
 
 #define BULLET_WIDTH 10
 #define BULLET_HEIGHT 20
@@ -28,7 +33,7 @@
 
 bool init(SDL_Window **window, SDL_Renderer **renderer);
 void handle_input(bool *running, const Uint8 *keys, Entity *player, Entity *bullet, bool *bullet_active, bool *echap);
-void update(Entity *player, Entity *bullet, Entity *bullet_enemy, Entity_Alien* liste_alien,size_t taille_alien,bool *bullet_active,bool *bullet_active_enemy, float dt);
+void update(Entity *player, Entity *bullet, Entity *bullet_enemy, Entity_Alien* liste_alien,int increase_speed, size_t taille_alien,bool *bullet_active,bool *bullet_active_enemy, float dt);
 bool end_game(Entity_Alien* alien,Entity *player,size_t taille_alien, bool *running, bool victory);
 void render(SDL_Renderer *renderer, Entity *player, Entity_Alien* liste_alien,size_t taille_alien,Entity *bullet, Entity *bullet_enemy, bool bullet_active, bool bullet_active_enemy);
 void cleanup(SDL_Window *window, SDL_Renderer *renderer);

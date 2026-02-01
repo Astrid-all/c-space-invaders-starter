@@ -62,7 +62,7 @@ void handle_input(bool *running, const Uint8 *keys, Entity *player, Entity *bull
     }
 }
 
-void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* alien,
+void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* alien,int increase_speed,
     size_t taille_alien, bool *bullet_active, bool *bullet_active_enemy, float dt){
 
     player->x += player->vx * dt;
@@ -83,6 +83,7 @@ void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* al
     // Gestion aliens
     int nb_aliens_restants = 0;
     for(size_t i =0;i<taille_alien;i++){
+        alien[i].vy = ALIEN_SPEED_Y + increase_speed*INCREASE_SPEED;
         alien[i].y += alien[i].vy*dt;
         // vérification touché bullet
         if((((bullet->x>=alien[i].x)&&(bullet->x<=alien[i].x+ALIEN_WIDTH)) ||(((bullet->x+BULLET_WIDTH)>=alien[i].x)&&(bullet->x+BULLET_WIDTH<=alien[i].x+ALIEN_WIDTH)))
@@ -195,7 +196,7 @@ void render(SDL_Renderer *renderer, Entity *player,Entity_Alien* alien,size_t ta
     SDL_Rect full_life = {30,15,LIFE_CHART_WIDTH,LIFE_CHART_HEIGHT};
     SDL_SetRenderDrawColor(renderer, 128, 128, 128, 255);
     SDL_RenderFillRect(renderer, &full_life);
-    SDL_Rect current_life = {30,15,(int)LIFE_CHART_WIDTH*(player->life / FULL_LIFE),LIFE_CHART_HEIGHT};
+    SDL_Rect current_life = {30,15,(int)(LIFE_CHART_WIDTH*((float)player->life / (float)FULL_LIFE)),LIFE_CHART_HEIGHT};
     SDL_SetRenderDrawColor(renderer, 139, 0, 0, 255);
     SDL_RenderFillRect(renderer, &current_life);
 

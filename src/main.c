@@ -1,6 +1,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 #include <stdbool.h>
+#include <time.h>
 #include "entity.h"
 #include "game.h"
 
@@ -29,26 +30,22 @@ int main(void)
         .vx = 0,
         .vy = 0,
         .life = FULL_LIFE};
-    int nb_ennemis = 10;
+    int nb_ennemis = 20;
 
     /// Définition des ennemis - Initialisation
     Entity_Alien* liste_alien = malloc(nb_ennemis * sizeof(Entity_Alien)); // liste de structures = il faut allouer la mémoire
     if(liste_alien==NULL){
         return NULL;
     }
-    float vitesse_alien = 10;
 
     for(int i=0;i<nb_ennemis;i++){
-        //int num_ligne =  i/4;
-        int nb_en_ligne = 7; // nb_max_d'ennemis en ligne
         liste_alien[i].w = ALIEN_WIDTH;
         liste_alien[i].h = ALIEN_HEIGHT;
-        float dist_typ_x = (SCREEN_WIDTH)/(nb_en_ligne +1) ; // espacement typique entre 2 ennemis 
-        float dist_typ_y = SCREEN_HEIGHT/11 ; 
+        float dist_typ_x = (SCREEN_WIDTH)/(NUM_ALIEN_PER_LINE +1) ; // espacement typique entre 2 ennemis 
         // espacement des ennemis de façon régulière 
-        liste_alien[i].y = dist_typ_y *(i/nb_en_ligne);    
-        liste_alien[i].vy = vitesse_alien;
-        liste_alien[i].x = dist_typ_x*(i%nb_en_ligne +1);
+        liste_alien[i].y = SPACE_VERTICAL *(i/NUM_ALIEN_PER_LINE);    
+        liste_alien[i].vy = ALIEN_SPEED_Y;
+        liste_alien[i].x = dist_typ_x*(i%NUM_ALIEN_PER_LINE +1);
         liste_alien[i].hurt = false;
         
 
@@ -61,6 +58,8 @@ int main(void)
     bool victory = false;
     bool echap = false;
 
+    clock_t start_time = clock();
+    int increase_speed = 0;
     while (running||(echap==false))
     { 
         if(running){
@@ -73,7 +72,14 @@ int main(void)
         SDL_PumpEvents();
         const Uint8 *keys = SDL_GetKeyboardState(NULL);
         handle_input(&running, keys, &player, &bullet, &bullet_active,&echap);
-        update(&player, &bullet,&bullet_enemy, liste_alien,nb_ennemis, &bullet_active,&bullet_active_enemy, dt);
+
+        clock_t second_time = clock();
+        if((float)((second_time - start_time)/CLOCKS_PER_SEC)>=12){
+            increase_speed +=1;
+            start_time=second_time;
+        }
+        
+        update(&player, &bullet,&bullet_enemy, liste_alien,increase_speed,nb_ennemis, &bullet_active,&bullet_active_enemy, dt);
         render(renderer, &player,liste_alien,nb_ennemis, &bullet, &bullet_enemy, bullet_active, bullet_active_enemy);
         running = end_game(liste_alien,&player,nb_ennemis,&running,victory);
         }
