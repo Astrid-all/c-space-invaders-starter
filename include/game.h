@@ -15,8 +15,8 @@
 
 #define ALIEN_WIDTH 25
 #define ALIEN_HEIGHT 25
-#define ALIEN_SPEED_Y 10.0f
-#define INCREASE_SPEED 10.0f
+#define ALIEN_SPEED_X 15.0f
+#define INCREASE_SPEED 5.0f
 #define NUM_ALIEN_PER_LINE 10
 #define SPACE_VERTICAL 54
 

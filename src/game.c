@@ -83,8 +83,7 @@ void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* al
     // Gestion aliens
     int nb_aliens_restants = 0;
     for(size_t i =0;i<taille_alien;i++){
-        alien[i].vy = ALIEN_SPEED_Y + increase_speed*INCREASE_SPEED;
-        alien[i].y += alien[i].vy*dt;
+        
         // vérification touché bullet
         if((((bullet->x>=alien[i].x)&&(bullet->x<=alien[i].x+ALIEN_WIDTH)) ||(((bullet->x+BULLET_WIDTH)>=alien[i].x)&&(bullet->x+BULLET_WIDTH<=alien[i].x+ALIEN_WIDTH)))
                 && ((bullet->y>alien[i].y)&&(bullet->y <= alien[i].y + ALIEN_HEIGHT)) ){
@@ -93,8 +92,14 @@ void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* al
             alien[i].y = 0;
             alien[i].w = 0;
             alien[i].h =0;
-            alien[i].vy = 0;
+            alien[i].vx = 0;
             *bullet_active = false;
+            bullet->x = 0;
+            bullet->vx = 0;
+            bullet->vy = 0;
+            bullet->w = 0;
+            bullet->h = 0;
+            bullet->y = 0;
         }
         if(alien[i].hurt==false){
             nb_aliens_restants +=1 ;
@@ -104,11 +109,37 @@ void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* al
 
     int* liste_aliens_restants = malloc(sizeof(int)*nb_aliens_restants);
     int compteur = 0;
+    bool cond_left = false;
+    bool cond_right = false;
+
     for(size_t j =0; j<taille_alien;j++){
         if (alien[j].hurt ==false){
             liste_aliens_restants[compteur] = j; // on garde les indices des aliens restants
             compteur +=1;
+            // on regarde si l'un des aliens restants touche un des bords
+        if((alien[j].x>=SCREEN_WIDTH-20)&&(alien[j].vx>0)){
+            cond_right = true;
+        }
+        else if((alien[j].x<=15)&&(alien[j].vx<0)){
+            cond_left = true;
+        }
     }
+    
+    }
+    // Déplacement des aliens restants
+    for(int k =0;k<nb_aliens_restants;k++){
+        if(cond_left){
+            alien[liste_aliens_restants[k]].vx = ALIEN_SPEED_X + INCREASE_SPEED*increase_speed;
+            alien[liste_aliens_restants[k]].x += alien[liste_aliens_restants[k]].vx*dt;
+        }
+        else if(cond_right){
+            alien[liste_aliens_restants[k]].vx = -ALIEN_SPEED_X - increase_speed * INCREASE_SPEED;
+            alien[liste_aliens_restants[k]].y += SPACE_VERTICAL; 
+        }
+        else{
+            alien[liste_aliens_restants[k]].x += alien[liste_aliens_restants[k]].vx*dt; 
+        }
+
     }
 
     //Gestion bullet ennemies 
@@ -213,7 +244,7 @@ void render(SDL_Renderer *renderer, Entity *player,Entity_Alien* alien,size_t ta
         SDL_RenderFillRect(renderer, &alien_rect[i]);
         }
     }
-    // afichage bullets
+    // affichage bullets
     if (bullet_active)
     {
         SDL_Rect bullet_rect = {

@@ -44,7 +44,7 @@ int main(void)
         float dist_typ_x = (SCREEN_WIDTH)/(NUM_ALIEN_PER_LINE +1) ; // espacement typique entre 2 ennemis 
         // espacement des ennemis de façon régulière 
         liste_alien[i].y = SPACE_VERTICAL *(i/NUM_ALIEN_PER_LINE);    
-        liste_alien[i].vy = ALIEN_SPEED_Y;
+        liste_alien[i].vx = ALIEN_SPEED_X;
         liste_alien[i].x = dist_typ_x*(i%NUM_ALIEN_PER_LINE +1);
         liste_alien[i].hurt = false;
         

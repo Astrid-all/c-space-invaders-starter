@@ -11,7 +11,7 @@ typedef struct
 
 typedef struct {
     float x,y;
-    float vy;
+    float vx;
     int w,h;
     bool hurt;
 } Entity_Alien;
