@@ -63,7 +63,7 @@ void handle_input(bool *running, const Uint8 *keys, Entity *player, Entity *bull
 }
 
 void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* alien,int increase_speed,
-    size_t taille_alien, bool *bullet_active, bool *bullet_active_enemy, float dt){
+    size_t taille_alien, bool *bullet_active, bool *bullet_active_enemy, Entity *heart, bool *heart_present, float time_delta, float dt){
 
     player->x += player->vx * dt;
 
@@ -173,6 +173,77 @@ void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* al
         bullet_enemy->h = BULLET_HEIGHT;
         *bullet_active_enemy = true;
     }
+
+    // gestion des coeurs
+    // position aléatoire sur la même ligne que celle du joueur (mais différente de la position joueur)
+    // temps d'apparition du premier coeur
+    // temps entre 2 coeurs                
+    // récupération du coeur
+    if(*heart_present ==true){
+        if(((heart->x<=player->x + PLAYER_WIDTH)&&(heart->x>=player->x))||((heart->x + HEART_WIDTH<=player->x + PLAYER_WIDTH)&&
+        (heart->x+HEART_WIDTH>=player->x))){
+            if(player->life + RECOVERY <FULL_LIFE){
+                player->life += RECOVERY;
+            }
+            else{
+                player->life = FULL_LIFE;
+            }
+            *heart_present = false;
+            heart->x = 0;
+            heart->y = 0;
+            heart->w =0;
+            heart->h =0;
+            heart->vx =0;
+            heart->life = 0;
+            heart->vy =0;
+        }
+    }
+
+    else if((int)time_delta>=APPEARANCE_TIME){
+
+        srand(time(NULL));
+        *heart_present = true;
+        int pixel_pos = rand() % (SCREEN_WIDTH -30) + 15;
+        if ((pixel_pos>=player->x)&&(pixel_pos<= player->x + PLAYER_WIDTH)){
+            // le coeur apparaît sur le joueur => on le déplace
+            if((pixel_pos + PLAYER_WIDTH + 30) <=(SCREEN_WIDTH - 15)){
+                // il y a assez de place à droite du joueur
+                pixel_pos = pixel_pos + PLAYER_WIDTH + 30;
+                heart->x = pixel_pos;
+                heart->y = player->y;
+                heart->w = HEART_WIDTH;
+                heart->h = HEART_HEIGHT;
+                heart->vx =0;
+                heart->vy = 0;
+                heart->life = 0;
+
+            }
+            else if((pixel_pos-PLAYER_WIDTH - 30) >= 15){
+                // il y a assez de place à gauche
+                pixel_pos = pixel_pos - PLAYER_WIDTH - 30;
+                heart->x = pixel_pos;
+                heart->y = player->y;
+                heart->w = HEART_WIDTH;
+                heart->h = HEART_HEIGHT;
+                heart->vx =0;
+                heart->vy = 0;
+                heart->life = 0;
+
+            }
+        }
+        else{
+            heart->x = pixel_pos;
+            heart->y = player->y ;
+            heart->w = HEART_WIDTH;
+            heart->h = HEART_HEIGHT;
+            heart->vx =0;
+            heart->vy = 0;
+            heart->life = 0;
+        }
+
+    }
+    
+    
     free(liste_aliens_restants);
 
 }
@@ -212,7 +283,7 @@ bool end_game(Entity_Alien* alien, Entity *player, size_t taille_alien, bool *ru
 
 
 void render(SDL_Renderer *renderer, Entity *player,Entity_Alien* alien,size_t taille_alien, Entity *bullet, Entity *bullet_enemy, bool bullet_active,
-    bool bullet_active_enemy)
+    bool bullet_active_enemy, bool heart_present, Entity *heart)
 {
     SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
     SDL_RenderClear(renderer);
@@ -230,6 +301,16 @@ void render(SDL_Renderer *renderer, Entity *player,Entity_Alien* alien,size_t ta
     SDL_Rect current_life = {30,15,(int)(LIFE_CHART_WIDTH*((float)player->life / (float)FULL_LIFE)),LIFE_CHART_HEIGHT};
     SDL_SetRenderDrawColor(renderer, 139, 0, 0, 255);
     SDL_RenderFillRect(renderer, &current_life);
+
+    //affichage des coeurs
+    if (heart_present)
+    {
+        SDL_Rect heart_rect ={
+            (int)heart->x, (int)heart->y, heart->w, heart->h
+        };
+        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        SDL_RenderFillRect(renderer, &heart_rect);
+    }
 
     // aperçu graphique des aliens
     SDL_Rect alien_rect[taille_alien];
