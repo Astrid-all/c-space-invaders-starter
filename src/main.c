@@ -7,11 +7,13 @@
 
 int main(void)
 {
-    TTF_Init();
+ 
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
-    SDL_Surface* surfaceMessage=NULL;
-    SDL_Texture* Message=NULL;
+    SDL_Surface* surfaceMessage = malloc(sizeof(SDL_Surface));
+    SDL_Texture* Message = {0};
+    TTF_Font* Police = TTF_OpenFont("pixel-gaming-font/PixelGamingRegular-d9w0g.ttf", 22);
+    
 
     if (!init(&window, &renderer))
     {
@@ -39,15 +41,27 @@ int main(void)
     }
 
     for(int i=0;i<nb_ennemis;i++){
+        // gestion des classes
+        if((i%NUM_ALIEN_PER_LINE == 0)||(i%NUM_ALIEN_PER_LINE == NUM_ALIEN_PER_LINE-1)){
+            liste_alien[i].class = 0; // ennemis rapides sur les côtés
+        }
+        else{
+            liste_alien[i].class = rand() % 3 + 1; 
+        }
+        // initialisation vie selon la classe
+        if(liste_alien[i].class ==1){
+            liste_alien[i].life = STRONG_ALIEN_LIFE;
+        }
+        else{
+            liste_alien[i].life = ALIEN_LIFE;
+        }
         liste_alien[i].w = ALIEN_WIDTH;
         liste_alien[i].h = ALIEN_HEIGHT;
         float dist_typ_x = (SCREEN_WIDTH)/(NUM_ALIEN_PER_LINE +1) ; // espacement typique entre 2 ennemis 
         // espacement des ennemis de façon régulière 
         liste_alien[i].y = SPACE_VERTICAL *(i/NUM_ALIEN_PER_LINE);    
         liste_alien[i].vx = ALIEN_SPEED_X;
-        liste_alien[i].x = dist_typ_x*(i%NUM_ALIEN_PER_LINE +1);
-        liste_alien[i].hurt = false;
-        
+        liste_alien[i].x = dist_typ_x*(i%NUM_ALIEN_PER_LINE +1);  
 
     }
     // Initialisation bullets joueur et ennemie + coeur
@@ -55,6 +69,7 @@ int main(void)
     bool bullet_active = false;
     Entity bullet_enemy = {0};
     bool bullet_active_enemy = false;
+    bool shooter_turn = false;
 
     Entity heart = {0};
     bool heart_present = false;
@@ -87,47 +102,24 @@ int main(void)
         clock_t second_heart_time = clock();
         float time_delta = (float)((second_heart_time-heart_init_time)/CLOCKS_PER_SEC);
         
-        update(&player, &bullet,&bullet_enemy, liste_alien,increase_speed,nb_ennemis, &bullet_active,&bullet_active_enemy,&heart, &heart_present, time_delta, dt);
+        update(&player, &bullet,&bullet_enemy, liste_alien,increase_speed,nb_ennemis, &bullet_active,&bullet_active_enemy,&heart, &heart_present, &shooter_turn, time_delta, dt);
         render(renderer, &player,liste_alien,nb_ennemis, &bullet, &bullet_enemy, bullet_active, bullet_active_enemy, heart_present, &heart);
         if((time_delta>=APPEARANCE_TIME)&&(heart_present)){
             heart_init_time=second_heart_time;
         }
-        running = end_game(liste_alien,&player,nb_ennemis,&running,victory);
+        running = end_game(liste_alien,&player,nb_ennemis,&running,&victory);
 
         }
-        else if((running==false)&&(echap ==false)){
-            const Uint8 *keys = SDL_GetKeyboardState(NULL);
-           // TTF_Font* Police = TTF_OpenFont("../pixel-gaming-font/PixelGamingRegular-d9w0g.ttf", 22);
-           // SDL_Color White = {.r =255, .g =255, .b=255};
+        else if((echap==false)&&(running==false)){ 
             
-           // if (victory==true){
-           //     surfaceMessage = TTF_RenderText_Solid(Police, "VICTOIRE", White); 
-           // }
-           // else{
-           //     surfaceMessage = TTF_RenderText_Solid(Police, "GAME OVER", White);                          affichage des messages de victoire/défaite = à modifier
-           // }                                                                                                + à mettre dans game.c
-
-            //Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
-
-           // SDL_Rect Message_rect; 
-          //  Message_rect.x = (SCREEN_WIDTH-MESSAGE_WIDTH)/2;  
-          //  Message_rect.y = (SCREEN_HEIGHT-MESSAGE_HEIGHT)/2; 
-          //  Message_rect.w = MESSAGE_WIDTH; 
-          //  Message_rect.h = MESSAGE_HEIGHT; 
-
-           // SDL_RenderCopy(renderer, Message, NULL, &Message_rect);
+            final_message(renderer,&victory,surfaceMessage,Message,Police);
+            const Uint8 *keys = SDL_GetKeyboardState(NULL);
             handle_input(&running, keys, &player, &bullet, &bullet_active,&echap);
-          //  TTF_CloseFont(Police);
         }
     }
 
     // Affichage fin de partie  
-
-    SDL_FreeSurface(surfaceMessage);
-    SDL_DestroyTexture(Message);
-
-    cleanup(window, renderer);
+    cleanup(window, renderer, surfaceMessage,Message, Police);
     free(liste_alien);
-    TTF_Quit();
     return 0;
 }

@@ -1,4 +1,5 @@
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_ttf.h>
 #include "game.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,6 +34,16 @@ bool init(SDL_Window **window, SDL_Renderer **renderer)
     return true;
 }
 
+bool init_ttf(){
+    if(TTF_Init()==-1) 
+    {
+        printf("TTF_Init: %s\n", TTF_GetError());
+        exit(2);
+        return false;
+    }
+    return true;
+}
+
 void handle_input(bool *running, const Uint8 *keys, Entity *player, Entity *bullet,bool *bullet_active,bool *echap) 
 {
     SDL_Event event;
@@ -63,7 +74,7 @@ void handle_input(bool *running, const Uint8 *keys, Entity *player, Entity *bull
 }
 
 void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* alien,int increase_speed,
-    size_t taille_alien, bool *bullet_active, bool *bullet_active_enemy, Entity *heart, bool *heart_present, float time_delta, float dt){
+    size_t taille_alien, bool *bullet_active, bool *bullet_active_enemy, Entity *heart, bool *heart_present, bool *shooter_turn, float time_delta, float dt){
 
     player->x += player->vx * dt;
 
@@ -82,17 +93,13 @@ void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* al
  
     // Gestion aliens
     int nb_aliens_restants = 0;
+    int nb_shooters_restants = 0;
     for(size_t i =0;i<taille_alien;i++){
         
         // vérification touché bullet
         if((((bullet->x>=alien[i].x)&&(bullet->x<=alien[i].x+ALIEN_WIDTH)) ||(((bullet->x+BULLET_WIDTH)>=alien[i].x)&&(bullet->x+BULLET_WIDTH<=alien[i].x+ALIEN_WIDTH)))
                 && ((bullet->y>alien[i].y)&&(bullet->y <= alien[i].y + ALIEN_HEIGHT)) ){
-            alien[i].hurt = true;
-            alien[i].x =0;
-            alien[i].y = 0;
-            alien[i].w = 0;
-            alien[i].h =0;
-            alien[i].vx = 0;
+            alien[i].life -= BULLET_HARM;
             *bullet_active = false;
             bullet->x = 0;
             bullet->vx = 0;
@@ -101,21 +108,37 @@ void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* al
             bullet->h = 0;
             bullet->y = 0;
         }
-        if(alien[i].hurt==false){
+        if(alien[i].life>0){
             nb_aliens_restants +=1 ;
+            if(alien[i].class ==2){
+                nb_shooters_restants += 1;
+        }
         }
         
+        else if(alien[i].life<=0){
+            alien[i].x =0;
+            alien[i].y = 0;
+            alien[i].w = 0;
+            alien[i].h =0;
+            alien[i].vx = 0;
+        }
     }
 
     int* liste_aliens_restants = malloc(sizeof(int)*nb_aliens_restants);
-    int compteur = 0;
+    int* liste_shooters_restants = malloc(sizeof(int)*nb_shooters_restants);
+    int compteur_aliens = 0;
+    int compteur_shooters = 0;
     bool cond_left = false;
     bool cond_right = false;
 
     for(size_t j =0; j<taille_alien;j++){
-        if (alien[j].hurt ==false){
-            liste_aliens_restants[compteur] = j; // on garde les indices des aliens restants
-            compteur +=1;
+        if (alien[j].life >0){
+            liste_aliens_restants[compteur_aliens] = j; // on garde les indices des aliens restants
+            compteur_aliens +=1;
+            if(alien[j].class==2){
+                liste_shooters_restants[compteur_shooters]=j; // garde l'indice des shooters restants
+                compteur_shooters += 1;
+            }
             // on regarde si l'un des aliens restants touche un des bords
         if((alien[j].x>=SCREEN_WIDTH-20)&&(alien[j].vx>0)){
             cond_right = true;
@@ -131,6 +154,10 @@ void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* al
         if(cond_left){
             alien[liste_aliens_restants[k]].vx = ALIEN_SPEED_X + INCREASE_SPEED*increase_speed;
             alien[liste_aliens_restants[k]].x += alien[liste_aliens_restants[k]].vx*dt;
+            if(alien[liste_aliens_restants[k]].class==0){
+                //ennemi rapide descend dès qu'un bord est atteint
+                alien[liste_aliens_restants[k]].y += SPACE_VERTICAL; 
+            }
         }
         else if(cond_right){
             alien[liste_aliens_restants[k]].vx = -ALIEN_SPEED_X - increase_speed * INCREASE_SPEED;
@@ -164,11 +191,27 @@ void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* al
 
     else if(*bullet_active_enemy == false){
 
+        // un coup sur 2 sera effectué par un tireur s'il en reste+ les bullets envoyées par les tireurs sont plus rapides
         srand(time(NULL)); //initialisation du random
-        int pos_emetteur = rand() % nb_aliens_restants; // choix aléatoire d'un ennemi parmi ceux restants
+        int pos_emetteur = 0;
+        if((*shooter_turn)&&(nb_shooters_restants>0)){
+            pos_emetteur = rand()%nb_shooters_restants; // choix aléatoire parmi les tireurs
+            *shooter_turn = false;
+            bullet_enemy->vy = BULLET_SPEED * 0.6;
+        }
+        else{
+            pos_emetteur = rand() % nb_aliens_restants; // choix aléatoire d'un ennemi parmi ceux restants
+            *shooter_turn = true;
+            if(alien[liste_aliens_restants[pos_emetteur]].class==2){
+                bullet_enemy->vy = BULLET_SPEED * 0.6;
+            }
+            else{
+                bullet_enemy->vy = BULLET_SPEED * 0.4;
+            }    
+        }
+        
         bullet_enemy->y = alien[liste_aliens_restants[pos_emetteur]].y + ALIEN_HEIGHT;
         bullet_enemy->x = alien[liste_aliens_restants[pos_emetteur]].x + ALIEN_WIDTH / 2;
-        bullet_enemy->vy = BULLET_SPEED * 0.4;
         bullet_enemy->w = BULLET_WIDTH;
         bullet_enemy->h = BULLET_HEIGHT;
         *bullet_active_enemy = true;
@@ -245,36 +288,37 @@ void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* al
     
     
     free(liste_aliens_restants);
+    free(liste_shooters_restants);
 
 }
 
 
 // gestion fin de partie
-bool end_game(Entity_Alien* alien, Entity *player, size_t taille_alien, bool *running,bool victory){
+bool end_game(Entity_Alien* alien, Entity *player, size_t taille_alien, bool *running,bool *victory){
     int compt = 0;
     // contact avec les aliens
     for(size_t i = 0; i<taille_alien;i++){
         if(alien[i].y + ALIEN_HEIGHT >= player->y+PLAYER_HEIGHT){  //touche le sol
-            victory = false;
+            *victory = false;
             return *running = false;
         }
         if((alien[i].y + ALIEN_HEIGHT>= player->y )&&(((alien[i].x + ALIEN_WIDTH>=player->x)&&(alien[i].x+ALIEN_WIDTH<= player->x + PLAYER_WIDTH))||
         ((alien[i].x >=player->x)&&(alien[i].x<= player->x + PLAYER_WIDTH)))){ // touche le joueur
-            victory=false;
+            *victory=false;
             return *running = false;
         }
-        else if(alien[i].hurt == true){
+        else if(alien[i].life<=0){
             compt +=1;
         }
     }
     // destruction des aliens
     if(compt == (int)taille_alien){ // tous les aliens sont détruits
-        victory = true;
+        *victory = true;
         return *running = false;
     }
     // fin de vie
     else if(player->life<=0){
-        victory = false;
+        *victory = false;
         return *running = false;
     }
 
@@ -291,7 +335,7 @@ void render(SDL_Renderer *renderer, Entity *player,Entity_Alien* alien,size_t ta
     SDL_Rect player_rect = {
         (int)player->x, (int)player->y,
         player->w, player->h};
-    SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+    SDL_SetRenderDrawColor(renderer, 166, 77, 255, 255);
     SDL_RenderFillRect(renderer, &player_rect);
 
     // barre de niveau de vie
@@ -308,21 +352,43 @@ void render(SDL_Renderer *renderer, Entity *player,Entity_Alien* alien,size_t ta
         SDL_Rect heart_rect ={
             (int)heart->x, (int)heart->y, heart->w, heart->h
         };
-        SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255);
+        SDL_SetRenderDrawColor(renderer, 255, 25, 102, 255);
         SDL_RenderFillRect(renderer, &heart_rect);
     }
 
     // aperçu graphique des aliens
     SDL_Rect alien_rect[taille_alien];
     for(size_t i =0; i<taille_alien;i++){ 
+        int alien_init_life = 0;
         // on définit les coordonnées du rectangle si l'alien n'a pas été touché
-        if(alien[i].hurt==false){
+        if(alien[i].life>0){
         alien_rect[i].x = (int)alien[i].x;
         alien_rect[i].y = (int)alien[i].y;
         alien_rect[i].w = alien[i].w;
         alien_rect[i].h =  alien[i].h;
-        SDL_SetRenderDrawColor(renderer, 0, 255, 255, 255);
+        if(alien[i].class==0){ //fast
+            SDL_SetRenderDrawColor(renderer, 255, 128, 0, 255);
+            alien_init_life = ALIEN_LIFE;
+        }
+        else if(alien[i].class==1){ //tough
+            SDL_SetRenderDrawColor(renderer, 25, 178, 255, 255);
+            alien_init_life = ALIEN_LIFE*3;
+        }
+        else if(alien[i].class ==2){ //shooter
+            SDL_SetRenderDrawColor(renderer, 255, 255, 25, 255);
+            alien_init_life = ALIEN_LIFE;
+        }
+        else{SDL_SetRenderDrawColor(renderer, 0, 255, 0, 255);
+            alien_init_life = ALIEN_LIFE;
+        }
         SDL_RenderFillRect(renderer, &alien_rect[i]);
+        // barre de vie des aliens (en multiple du nombre de bullets nécessaires pour les tuer)
+        SDL_Rect current_alien_life = {
+            ((int)alien[i].x + (ALIEN_WIDTH-alien_init_life)/2), ((int)alien[i].y - DISTANCE_LIFE_CHART),
+            (int)(ALIEN_LIFE_CHART_WIDTH * ((float)alien[i].life / (float)(BULLET_HARM))), ALIEN_LIFE_CHART_HEIGHT 
+        };
+        SDL_SetRenderDrawColor(renderer, 139, 0, 0, 255);
+        SDL_RenderFillRect(renderer, &current_alien_life);
         }
     }
     // affichage bullets
@@ -346,11 +412,37 @@ void render(SDL_Renderer *renderer, Entity *player,Entity_Alien* alien,size_t ta
 
 }
 
-void cleanup(SDL_Window *window, SDL_Renderer *renderer)
+//affichage message de fin de partie
+void final_message(SDL_Renderer *renderer, bool *victory,SDL_Surface* surfaceMessage,SDL_Texture* Message,TTF_Font* Police){
+    
+    
+    SDL_Color White = {.r =255, .g =255, .b=255};
+
+            if (*victory){
+                surfaceMessage = TTF_RenderText_Solid(Police, "VICTOIRE", White); 
+            }
+            else{
+                surfaceMessage = TTF_RenderText_Solid(Police, "GAME OVER", White);                          
+            }                                                                                                
+            Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+            SDL_Rect Message_rect; 
+            Message_rect.x = (SCREEN_WIDTH-MESSAGE_WIDTH)/2;  
+            Message_rect.y = (SCREEN_HEIGHT-MESSAGE_HEIGHT)/2; 
+            Message_rect.w = MESSAGE_WIDTH; 
+            Message_rect.h = MESSAGE_HEIGHT; 
+
+            SDL_RenderCopy(renderer, Message, NULL, &Message_rect); 
+}
+
+void cleanup(SDL_Window *window, SDL_Renderer *renderer,SDL_Surface* surfaceMessage,SDL_Texture* Message,TTF_Font* Police)
 {
     if (renderer)
         SDL_DestroyRenderer(renderer);
     if (window)
         SDL_DestroyWindow(window);
+    TTF_CloseFont(Police);
+    SDL_FreeSurface(surfaceMessage);
+    SDL_DestroyTexture(Message);
     SDL_Quit();
+    TTF_Quit();
 }
