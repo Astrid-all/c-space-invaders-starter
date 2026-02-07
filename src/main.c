@@ -50,16 +50,20 @@ int main(void)
         
 
     }
-    // Initialisation bullets joueur et ennemie
+    // Initialisation bullets joueur et ennemie + coeur
     Entity bullet = {0};
     bool bullet_active = false;
     Entity bullet_enemy = {0};
     bool bullet_active_enemy = false;
+
+    Entity heart = {0};
+    bool heart_present = false;
     bool victory = false;
     bool echap = false;
 
     clock_t start_time = clock();
     int increase_speed = 0;
+    clock_t heart_init_time = clock();
     while (running||(echap==false))
     { 
         if(running){
@@ -74,14 +78,22 @@ int main(void)
         handle_input(&running, keys, &player, &bullet, &bullet_active,&echap);
 
         clock_t second_time = clock();
-        if((float)((second_time - start_time)/CLOCKS_PER_SEC)>=12){
+        if((float)((second_time - start_time)/CLOCKS_PER_SEC)>=INCREASE_SPEED_TIME){
             increase_speed +=1;
             start_time=second_time;
+            
         }
+
+        clock_t second_heart_time = clock();
+        float time_delta = (float)((second_heart_time-heart_init_time)/CLOCKS_PER_SEC);
         
-        update(&player, &bullet,&bullet_enemy, liste_alien,increase_speed,nb_ennemis, &bullet_active,&bullet_active_enemy, dt);
-        render(renderer, &player,liste_alien,nb_ennemis, &bullet, &bullet_enemy, bullet_active, bullet_active_enemy);
+        update(&player, &bullet,&bullet_enemy, liste_alien,increase_speed,nb_ennemis, &bullet_active,&bullet_active_enemy,&heart, &heart_present, time_delta, dt);
+        render(renderer, &player,liste_alien,nb_ennemis, &bullet, &bullet_enemy, bullet_active, bullet_active_enemy, heart_present, &heart);
+        if((time_delta>=APPEARANCE_TIME)&&(heart_present)){
+            heart_init_time=second_heart_time;
+        }
         running = end_game(liste_alien,&player,nb_ennemis,&running,victory);
+
         }
         else if((running==false)&&(echap ==false)){
             const Uint8 *keys = SDL_GetKeyboardState(NULL);
