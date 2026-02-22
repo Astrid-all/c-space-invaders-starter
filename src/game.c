@@ -426,7 +426,7 @@ void render(SDL_Renderer *renderer, Entity *player,Entity_Alien* alien,size_t ta
 }
 
 //affichage message de fin de partie
-void final_message(SDL_Renderer *renderer, bool *victory,TTF_Font* Police, int score){
+void final_message(SDL_Renderer *renderer, bool *victory,TTF_Font* Police, int score, float timing){
 
     SDL_Color White = {.r =255, .g =255, .b=255};
     
@@ -444,6 +444,7 @@ void final_message(SDL_Renderer *renderer, bool *victory,TTF_Font* Police, int s
     SDL_Rect Message_rect= {
         (SCREEN_WIDTH-surfaceMessage->w)/2,(SCREEN_HEIGHT-surfaceMessage->h)/2,surfaceMessage->w,surfaceMessage->h
         }; 
+     // Score    
     char final_score[100] ;
     sprintf(final_score,"Score : %d",score);
     SDL_Surface* surfaceScore = TTF_RenderUTF8_Solid(Police,final_score , White); 
@@ -452,13 +453,27 @@ void final_message(SDL_Renderer *renderer, bool *victory,TTF_Font* Police, int s
         (SCREEN_WIDTH-surfaceScore->w)/2,(SCREEN_HEIGHT-surfaceScore->h)/2+surfaceMessage->h,surfaceScore->w,surfaceScore->h
         }; 
 
+        // Temps de jeu
+    char final_time[100] ;
+    sprintf(final_time,"Time : %f",timing);
+    SDL_Surface* surfaceTime = TTF_RenderUTF8_Solid(Police,final_time , White); 
+    SDL_Texture* Time = SDL_CreateTextureFromSurface(renderer,surfaceTime);
+    SDL_Rect Time_rect= {
+        (SCREEN_WIDTH-surfaceTime->w)/2,(SCREEN_HEIGHT-surfaceTime->h)/2+surfaceMessage->h + surfaceScore->h,surfaceTime->w,surfaceTime->h
+        }; 
+
     SDL_RenderCopy(renderer, Message, NULL, &Message_rect); 
     SDL_RenderCopy(renderer, Score, NULL, &Score_rect); 
+    SDL_RenderCopy(renderer, Time, NULL, &Time_rect); 
     SDL_RenderPresent(renderer);
+
+    // Libération
     SDL_FreeSurface(surfaceMessage);
     SDL_DestroyTexture(Message);
     SDL_FreeSurface(surfaceScore);
     SDL_DestroyTexture(Message);
+    SDL_FreeSurface(surfaceTime);
+    SDL_DestroyTexture(Time);
 }
 
 void cleanup(SDL_Window *window, SDL_Renderer *renderer,TTF_Font* Police)
