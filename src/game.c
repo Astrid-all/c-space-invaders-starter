@@ -197,7 +197,7 @@ void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* al
         if((*shooter_turn)&&(nb_shooters_restants>0)){
             pos_emetteur = rand()%nb_shooters_restants; // choix aléatoire parmi les tireurs
             *shooter_turn = false;
-            bullet_enemy->vy = BULLET_SPEED * 0.6;
+            bullet_enemy->vy = BULLET_SPEED * 0.5;
         }
         else{
             pos_emetteur = rand() % nb_aliens_restants; // choix aléatoire d'un ennemi parmi ceux restants
@@ -413,36 +413,39 @@ void render(SDL_Renderer *renderer, Entity *player,Entity_Alien* alien,size_t ta
 }
 
 //affichage message de fin de partie
-void final_message(SDL_Renderer *renderer, bool *victory,SDL_Surface* surfaceMessage,SDL_Texture* Message,TTF_Font* Police){
+void final_message(SDL_Renderer *renderer, bool *victory,TTF_Font* Police){
     
     
     SDL_Color White = {.r =255, .g =255, .b=255};
-
+    
+    SDL_RenderClear(renderer);
+    SDL_SetRenderDrawColor(renderer, 0,0,0,255);
+    char* texte;
             if (*victory){
-                surfaceMessage = TTF_RenderText_Solid(Police, "VICTOIRE", White); 
+                texte = "Victory"; 
             }
             else{
-                surfaceMessage = TTF_RenderText_Solid(Police, "GAME OVER", White);                          
-            }                                                                                                
-            Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
-            SDL_Rect Message_rect; 
-            Message_rect.x = (SCREEN_WIDTH-MESSAGE_WIDTH)/2;  
-            Message_rect.y = (SCREEN_HEIGHT-MESSAGE_HEIGHT)/2; 
-            Message_rect.w = MESSAGE_WIDTH; 
-            Message_rect.h = MESSAGE_HEIGHT; 
+                texte = "Defeat";                              
+            }   
+            SDL_Surface* surfaceMessage = TTF_RenderUTF8_Solid(Police, texte, White);                                                                                             
+            SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+            SDL_Rect Message_rect= {
+                (SCREEN_WIDTH-surfaceMessage->w)/2,(SCREEN_HEIGHT-surfaceMessage->h)/2,surfaceMessage->w,surfaceMessage->h
+            }; 
 
-            SDL_RenderCopy(renderer, Message, NULL, &Message_rect); 
+    SDL_RenderCopy(renderer, Message, NULL, &Message_rect); 
+    SDL_RenderPresent(renderer);
+    SDL_FreeSurface(surfaceMessage);
+    SDL_DestroyTexture(Message);
 }
 
-void cleanup(SDL_Window *window, SDL_Renderer *renderer,SDL_Surface* surfaceMessage,SDL_Texture* Message,TTF_Font* Police)
+void cleanup(SDL_Window *window, SDL_Renderer *renderer,TTF_Font* Police)
 {
     if (renderer)
         SDL_DestroyRenderer(renderer);
     if (window)
         SDL_DestroyWindow(window);
     TTF_CloseFont(Police);
-    SDL_FreeSurface(surfaceMessage);
-    SDL_DestroyTexture(Message);
     SDL_Quit();
     TTF_Quit();
 }

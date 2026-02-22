@@ -10,16 +10,16 @@ int main(void)
  
     SDL_Window *window = NULL;
     SDL_Renderer *renderer = NULL;
-    SDL_Surface* surfaceMessage = malloc(sizeof(SDL_Surface));
-    SDL_Texture* Message = {0};
-    TTF_Font* Police = TTF_OpenFont("pixel-gaming-font/PixelGamingRegular-d9w0g.ttf", 22);
     
-
     if (!init(&window, &renderer))
     {
         return 1;
     }
 
+    if(!init_ttf()){
+        return 1;
+    }
+    TTF_Font* Police = TTF_OpenFont("pixel-gaming-font/PixelGamingRegular-d9w0g.ttf", 52);
 
     bool running = true;
     Uint32 last_ticks = SDL_GetTicks();
@@ -101,9 +101,10 @@ int main(void)
 
         clock_t second_heart_time = clock();
         float time_delta = (float)((second_heart_time-heart_init_time)/CLOCKS_PER_SEC);
-        
+        // maj des données
         update(&player, &bullet,&bullet_enemy, liste_alien,increase_speed,nb_ennemis, &bullet_active,&bullet_active_enemy,&heart, &heart_present, &shooter_turn, time_delta, dt);
         render(renderer, &player,liste_alien,nb_ennemis, &bullet, &bullet_enemy, bullet_active, bullet_active_enemy, heart_present, &heart);
+        
         if((time_delta>=APPEARANCE_TIME)&&(heart_present)){
             heart_init_time=second_heart_time;
         }
@@ -112,14 +113,14 @@ int main(void)
         }
         else if((echap==false)&&(running==false)){ 
             
-            final_message(renderer,&victory,surfaceMessage,Message,Police);
+            final_message(renderer,&victory,Police);
             const Uint8 *keys = SDL_GetKeyboardState(NULL);
             handle_input(&running, keys, &player, &bullet, &bullet_active,&echap);
         }
     }
 
     // Affichage fin de partie  
-    cleanup(window, renderer, surfaceMessage,Message, Police);
+    cleanup(window, renderer, Police);
     free(liste_alien);
     return 0;
 }

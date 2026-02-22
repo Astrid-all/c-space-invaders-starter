@@ -48,7 +48,7 @@ void handle_input(bool *running, const Uint8 *keys, Entity *player, Entity *bull
 void update(Entity *player, Entity *bullet, Entity *bullet_enemy, Entity_Alien* liste_alien,int increase_speed, size_t taille_alien,bool *bullet_active,bool *bullet_active_enemy, Entity *heart,bool *heart_present,bool *shooter_turn, float time_delta, float dt);
 bool end_game(Entity_Alien* alien,Entity *player,size_t taille_alien, bool *running, bool *victory);
 void render(SDL_Renderer *renderer, Entity *player, Entity_Alien* liste_alien,size_t taille_alien,Entity *bullet, Entity *bullet_enemy, bool bullet_active, bool bullet_active_enemy, bool heart_present, Entity *heart);
-void final_message(SDL_Renderer *renderer, bool *victory,SDL_Surface* surfaceMessage,SDL_Texture* Message,TTF_Font* Police);
-void cleanup(SDL_Window *window, SDL_Renderer *renderer,SDL_Surface* surfaceMessage,SDL_Texture* Message,TTF_Font* Police);
+void final_message(SDL_Renderer *renderer, bool *victory,TTF_Font* Police);
+void cleanup(SDL_Window *window, SDL_Renderer *renderer,TTF_Font* Police);
 
 #endif
