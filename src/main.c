@@ -79,6 +79,13 @@ int main(void)
     clock_t start_time = clock();
     int increase_speed = 0;
     clock_t heart_init_time = clock();
+
+    // initialisation chronomètre de partie + score
+    int score = 0;
+    int* point_score = &score;
+    clock_t global_timer = clock();
+
+    // boucle de jeu
     while (running||(echap==false))
     { 
         if(running){
@@ -102,7 +109,7 @@ int main(void)
         clock_t second_heart_time = clock();
         float time_delta = (float)((second_heart_time-heart_init_time)/CLOCKS_PER_SEC);
         // maj des données
-        update(&player, &bullet,&bullet_enemy, liste_alien,increase_speed,nb_ennemis, &bullet_active,&bullet_active_enemy,&heart, &heart_present, &shooter_turn, time_delta, dt);
+        update(&player, &bullet,&bullet_enemy, liste_alien,increase_speed,nb_ennemis, &bullet_active,&bullet_active_enemy,&heart, &heart_present, &shooter_turn, time_delta, point_score, dt);
         render(renderer, &player,liste_alien,nb_ennemis, &bullet, &bullet_enemy, bullet_active, bullet_active_enemy, heart_present, &heart);
         
         if((time_delta>=APPEARANCE_TIME)&&(heart_present)){
@@ -112,14 +119,14 @@ int main(void)
 
         }
         else if((echap==false)&&(running==false)){ 
-            
-            final_message(renderer,&victory,Police);
+            // Affichage fin de partie  
+            final_message(renderer,&victory,Police,score);
             const Uint8 *keys = SDL_GetKeyboardState(NULL);
             handle_input(&running, keys, &player, &bullet, &bullet_active,&echap);
         }
     }
 
-    // Affichage fin de partie  
+
     cleanup(window, renderer, Police);
     free(liste_alien);
     return 0;

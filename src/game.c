@@ -74,7 +74,7 @@ void handle_input(bool *running, const Uint8 *keys, Entity *player, Entity *bull
 }
 
 void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* alien,int increase_speed,
-    size_t taille_alien, bool *bullet_active, bool *bullet_active_enemy, Entity *heart, bool *heart_present, bool *shooter_turn, float time_delta, float dt){
+    size_t taille_alien, bool *bullet_active, bool *bullet_active_enemy, Entity *heart, bool *heart_present, bool *shooter_turn, float time_delta, int* point_score, float dt){
 
     player->x += player->vx * dt;
 
@@ -107,6 +107,19 @@ void update(Entity *player, Entity *bullet,Entity *bullet_enemy,Entity_Alien* al
             bullet->w = 0;
             bullet->h = 0;
             bullet->y = 0;
+            if(alien[i].class == 0){
+                *point_score += 10;
+                printf("%d",*point_score);
+            }
+            else if(alien[i].class == 1){
+                *point_score += 7;
+            }
+            else if(alien[i].class == 2){
+                *point_score += 17;
+            }
+            else if(alien[i].class == 3){
+                *point_score += 5;
+            }
         }
         if(alien[i].life>0){
             nb_aliens_restants +=1 ;
@@ -325,7 +338,7 @@ bool end_game(Entity_Alien* alien, Entity *player, size_t taille_alien, bool *ru
     return *running = true;
 }
 
-
+// Affichage
 void render(SDL_Renderer *renderer, Entity *player,Entity_Alien* alien,size_t taille_alien, Entity *bullet, Entity *bullet_enemy, bool bullet_active,
     bool bullet_active_enemy, bool heart_present, Entity *heart)
 {
@@ -413,29 +426,38 @@ void render(SDL_Renderer *renderer, Entity *player,Entity_Alien* alien,size_t ta
 }
 
 //affichage message de fin de partie
-void final_message(SDL_Renderer *renderer, bool *victory,TTF_Font* Police){
-    
-    
+void final_message(SDL_Renderer *renderer, bool *victory,TTF_Font* Police, int score){
+
     SDL_Color White = {.r =255, .g =255, .b=255};
     
     SDL_RenderClear(renderer);
     SDL_SetRenderDrawColor(renderer, 0,0,0,255);
     char* texte;
-            if (*victory){
-                texte = "Victory"; 
-            }
-            else{
-                texte = "Defeat";                              
-            }   
-            SDL_Surface* surfaceMessage = TTF_RenderUTF8_Solid(Police, texte, White);                                                                                             
-            SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
-            SDL_Rect Message_rect= {
-                (SCREEN_WIDTH-surfaceMessage->w)/2,(SCREEN_HEIGHT-surfaceMessage->h)/2,surfaceMessage->w,surfaceMessage->h
-            }; 
+    if (*victory){
+        texte = "Victory"; 
+    }
+    else{
+        texte = "Defeat";                              
+    }   
+    SDL_Surface* surfaceMessage = TTF_RenderUTF8_Solid(Police, texte, White);                                                                                             
+    SDL_Texture* Message = SDL_CreateTextureFromSurface(renderer, surfaceMessage);
+    SDL_Rect Message_rect= {
+        (SCREEN_WIDTH-surfaceMessage->w)/2,(SCREEN_HEIGHT-surfaceMessage->h)/2,surfaceMessage->w,surfaceMessage->h
+        }; 
+    char final_score[100] ;
+    sprintf(final_score,"Score : %d",score);
+    SDL_Surface* surfaceScore = TTF_RenderUTF8_Solid(Police,final_score , White); 
+    SDL_Texture* Score = SDL_CreateTextureFromSurface(renderer,surfaceScore);
+    SDL_Rect Score_rect= {
+        (SCREEN_WIDTH-surfaceScore->w)/2,(SCREEN_HEIGHT-surfaceScore->h)/2+surfaceMessage->h,surfaceScore->w,surfaceScore->h
+        }; 
 
     SDL_RenderCopy(renderer, Message, NULL, &Message_rect); 
+    SDL_RenderCopy(renderer, Score, NULL, &Score_rect); 
     SDL_RenderPresent(renderer);
     SDL_FreeSurface(surfaceMessage);
+    SDL_DestroyTexture(Message);
+    SDL_FreeSurface(surfaceScore);
     SDL_DestroyTexture(Message);
 }
 
